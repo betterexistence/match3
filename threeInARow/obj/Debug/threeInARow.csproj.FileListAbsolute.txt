@@ -1,0 +1,12 @@
+D:\visual\threeInARow\threeInARow\bin\Debug\threeInARow.dll
+D:\visual\threeInARow\threeInARow\bin\Debug\threeInARow.pdb
+D:\visual\threeInARow\threeInARow\obj\Debug\threeInARow.csproj.CoreCompileInputs.cache
+D:\visual\threeInARow\threeInARow\obj\Debug\threeInARow.dll
+D:\visual\threeInARow\threeInARow\obj\Debug\threeInARow.pdb
+D:\visual\threeInARow\threeInARow\obj\Debug\threeInARow.csproj.AssemblyReference.cache
+D:\visual\три в ряд\threeInARow\bin\Debug\threeInARow.dll
+D:\visual\три в ряд\threeInARow\bin\Debug\threeInARow.pdb
+D:\visual\три в ряд\threeInARow\obj\Debug\threeInARow.csproj.AssemblyReference.cache
+D:\visual\три в ряд\threeInARow\obj\Debug\threeInARow.csproj.CoreCompileInputs.cache
+D:\visual\три в ряд\threeInARow\obj\Debug\threeInARow.dll
+D:\visual\три в ряд\threeInARow\obj\Debug\threeInARow.pdb

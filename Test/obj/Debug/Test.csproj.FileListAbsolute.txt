@@ -1,0 +1,26 @@
+D:\visual\threeInARow\Test\bin\Debug\Test.exe.config
+D:\visual\threeInARow\Test\bin\Debug\Test.exe
+D:\visual\threeInARow\Test\bin\Debug\Test.pdb
+D:\visual\threeInARow\Test\obj\Debug\Test.Form1.resources
+D:\visual\threeInARow\Test\obj\Debug\Test.Properties.Resources.resources
+D:\visual\threeInARow\Test\obj\Debug\Test.csproj.GenerateResource.cache
+D:\visual\threeInARow\Test\obj\Debug\Test.csproj.CoreCompileInputs.cache
+D:\visual\threeInARow\Test\obj\Debug\Test.exe
+D:\visual\threeInARow\Test\obj\Debug\Test.pdb
+D:\visual\threeInARow\Test\bin\Debug\threeInARow.dll
+D:\visual\threeInARow\Test\bin\Debug\threeInARow.pdb
+D:\visual\threeInARow\Test\obj\Debug\Test.csproj.AssemblyReference.cache
+D:\visual\threeInARow\Test\obj\Debug\Test.csproj.CopyComplete
+D:\visual\три в ряд\Test\bin\Debug\Test.exe.config
+D:\visual\три в ряд\Test\bin\Debug\Test.exe
+D:\visual\три в ряд\Test\bin\Debug\Test.pdb
+D:\visual\три в ряд\Test\bin\Debug\threeInARow.dll
+D:\visual\три в ряд\Test\bin\Debug\threeInARow.pdb
+D:\visual\три в ряд\Test\obj\Debug\Test.csproj.AssemblyReference.cache
+D:\visual\три в ряд\Test\obj\Debug\Test.Form1.resources
+D:\visual\три в ряд\Test\obj\Debug\Test.Properties.Resources.resources
+D:\visual\три в ряд\Test\obj\Debug\Test.csproj.GenerateResource.cache
+D:\visual\три в ряд\Test\obj\Debug\Test.csproj.CoreCompileInputs.cache
+D:\visual\три в ряд\Test\obj\Debug\Test.csproj.CopyComplete
+D:\visual\три в ряд\Test\obj\Debug\Test.exe
+D:\visual\три в ряд\Test\obj\Debug\Test.pdb
