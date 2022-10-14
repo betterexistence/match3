@@ -24,3 +24,17 @@ D:\visual\три в ряд\Test\obj\Debug\Test.csproj.CoreCompileInputs.cache
 D:\visual\три в ряд\Test\obj\Debug\Test.csproj.CopyComplete
 D:\visual\три в ряд\Test\obj\Debug\Test.exe
 D:\visual\три в ряд\Test\obj\Debug\Test.pdb
+E:\college\C#\match3\Test\bin\Debug\Test.exe.config
+E:\college\C#\match3\Test\bin\Debug\Test.exe
+E:\college\C#\match3\Test\bin\Debug\Test.pdb
+E:\college\C#\match3\Test\bin\Debug\threeInARow.dll
+E:\college\C#\match3\Test\bin\Debug\threeInARow.pdb
+E:\college\C#\match3\Test\obj\Debug\Test.csproj.AssemblyReference.cache
+E:\college\C#\match3\Test\obj\Debug\Test.csproj.SuggestedBindingRedirects.cache
+E:\college\C#\match3\Test\obj\Debug\Test.Form1.resources
+E:\college\C#\match3\Test\obj\Debug\Test.Properties.Resources.resources
+E:\college\C#\match3\Test\obj\Debug\Test.csproj.GenerateResource.cache
+E:\college\C#\match3\Test\obj\Debug\Test.csproj.CoreCompileInputs.cache
+E:\college\C#\match3\Test\obj\Debug\Test.csproj.CopyComplete
+E:\college\C#\match3\Test\obj\Debug\Test.exe
+E:\college\C#\match3\Test\obj\Debug\Test.pdb

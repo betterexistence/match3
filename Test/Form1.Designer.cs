@@ -29,23 +29,20 @@ namespace Test
         /// </summary>
         private void InitializeComponent()
         {
-            this.threeinarow1 = new threeInARow.threeinarow();
+            this.threeinarow1 = new threeInARow.ThreeInARow();
             this.SuspendLayout();
             // 
             // threeinarow1
             // 
-            this.threeinarow1.Active = false;
             this.threeinarow1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.threeinarow1.Location = new System.Drawing.Point(12, 12);
             this.threeinarow1.Name = "threeinarow1";
-            this.threeinarow1.Size = new System.Drawing.Size(425, 425);
-            this.threeinarow1.TabIndex = 0;
+            this.threeinarow1.Score = 0;
+            this.threeinarow1.Size = new System.Drawing.Size(424, 424);
+            this.threeinarow1.TabIndex = 1;
             this.threeinarow1.Text = "threeinarow1";
-            this.threeinarow1.x = 429;
-            this.threeinarow1.y = 429;
-            this.threeinarow1.Click += new System.EventHandler(this.MoveBar);
             // 
             // Form1
             // 
@@ -57,14 +54,13 @@ namespace Test
             this.MinimumSize = new System.Drawing.Size(470, 490);
             this.Name = "Form1";
             this.Text = "Form1";
-            this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private threeInARow.threeinarow threeinarow1;
+        private threeInARow.ThreeInARow threeinarow1;
     }
 }
 

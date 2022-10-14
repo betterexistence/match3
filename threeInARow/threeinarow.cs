@@ -1,242 +1,198 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.SqlTypes;
 using System.Drawing;
-using System.ComponentModel;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using static System.Windows.Forms.LinkLabel;
 
 namespace threeInARow
 {
-    public class threeinarow : Control
+    public class ThreeInARow : Control
     {
-        protected int _timerCount; //количество секунд
-        protected Timer _timer; 
-        protected bool _active;
-        protected int _elementSize;
-        protected const int fieldSize = 8;
-        protected int _score;
+        private const int GAME_FIELD_SIZE = 8;
+        private int _score;
 
-        public delegate void ElementRemoveHandler(int x, int y);
+        private enum BallColors : int
+        {
+            PURPLE = 0,
+            RED,
+            ORANGE,
+            GREEN,
+            YELLOW
+        }
+
+        // TODO: Check events
+        public delegate void ElementRemoveHandler();
         public event ElementRemoveHandler ElementRemoved;
 
-        public delegate void MatchesRemoveHandler();
-        public event MatchesRemoveHandler MatchesRemoved;
-
-        public delegate void ElementsFallHandler(List<Element> elements);
+        public delegate void ElementsFallHandler();
         public event ElementsFallHandler ElementsFalled;
 
-        protected int _x;
-        protected int _y;
-        protected int[,] field = new int[fieldSize, fieldSize];
-        private Point _firstElement = new Point(-1, -1);
-        public Point item;
-
-        static threeinarow checkedElement = null;
-
-        threeinarow[,] elements;
-
-        public threeinarow()
+        public int Score
         {
-            _score = 0;
-            _timerCount = 60;
-            _timer = new Timer();
-            _timer.Interval = 1000;
-            _x = 0;
-            _y = 0;
-            _active = true;
-            ElementRemoved += Game_ElementRemoved;
-            MatchesRemoved += Game_MatchesRemoved;
-            ElementsFalled += Game_ElementsFalled;
-            FillMatrix();
-        }
-
-        private void Game_ElementRemoved(int x, int y)
-        {
-            field[y, x] = -1;
-        }
-
-        private void Game_MatchesRemoved()
-        {
-            //scoreLabel.Text = "Score: " + m_game.GetScore().ToString();
-            UpdateElements();
-            Fall();
-            //Active = true;
-        }
-
-        private void Game_ElementsFalled(List<Element> indices)
-        {
-            List<int> elements = new List<int>();
-            foreach (Element element in indices)
-                elements.Add(field[element.Y, element.X]);
-            if (Fall())
-            {
-                UpdateElements();
-            }
-            else if (RemoveMatches() == false)
-                Active = true;
-            UpdateElements();
-        }
-
-        public sbyte GetValue(int x, int y)
-        {
-            return (sbyte)field[y, x];
-        }
-
-        public void UpdateElements()
-        {
-            int _elementSize = Width / 8;
-            Point _element = new Point(MousePosition.X / (_elementSize), MousePosition.Y / (_elementSize));
-            for (int y = 0; y < fieldSize; ++y)
-                for (int x = 0; x < fieldSize; ++x)
-                {
-                    //field[y, x] = field[_element.X, _element.Y];
-                    int value = GetValue(x, y);
-                    if (value >= 0)
-                        field[y, x] = GetValue(x, y);
-                    else
-                        field[y, x] = -1;
-                }
-            Invalidate();
-        }
-
-        public bool Active
-        {
-            get { return _active; }
+            get => _score;
             set
             {
-                //игра может завершиться, только когда активна
-                if (_active == false && value == true && _timerCount <= 0)
-                    Finish();
-                else
-                    _active = value;
+                if (value < 0) value = 0;
+                _score = value;
             }
         }
 
-        public bool RemoveMatches()
+        private int[,] _field = new int[GAME_FIELD_SIZE, GAME_FIELD_SIZE];  // ROW | COLUMN
+
+        private Point _selectedElement = new Point(-1, -1);
+
+        public ThreeInARow()
         {
-            List<Line> lines = new List<Line>();
-            //поиск горизонтальных линий
-            int[,] tmpMatrix = (int[,])field.Clone();
-            for (int y = 0; y < fieldSize; y++)
-                for (int x = 0; x < fieldSize; x++)
-                {
-                    if (tmpMatrix[y, x] == -1)
-                        continue;
-                    int count = 1;
-                    for (int i = x + 1; i < fieldSize; i++)
-                        if (tmpMatrix[y, i] == tmpMatrix[y, x])
-                            count++;
-                        else
-                            break;
-                    if (count >= 3)
-                    {
-                        for (int i = x; i < x + count; i++)
-                            tmpMatrix[y, i] = -1;
-                        lines.Add(new Line(new Element(x, y), new Element(x + count - 1, y)));
-                    }
-                }
+            Score = 0;
+            Click += OnControlClicked;
+            ElementsFalled += OnElementsFalled;
+            ElementRemoved += OnElementRemoved;
+            FillMatrix();
 
-            //поиск вертикальных линий
-            tmpMatrix = (int[,])field.Clone();
-            for (int y = 0; y < fieldSize; y++)
-                for (int x = 0; x < fieldSize; x++)
-                {
-                    if (tmpMatrix[y, x] == -1)
-                        continue;
-                    int count = 1;
-                    for (int i = y + 1; i < fieldSize; i++)
-                        if (tmpMatrix[i, x] == tmpMatrix[y, x])
-                            count++;
-                        else
-                            break;
-                    if (count >= 3)
-                    {
-                        for (int i = y; i < y + count; i++)
-                            tmpMatrix[i, x] = -1;
-                        lines.Add(new Line(new Element(x, y), new Element(x, y + count - 1)));
-                    }
-                }
 
-            if (lines.Count == 0)
-                return false;
+            //_isGamePlaying = true;
+        }
 
-            int baseValue = 10;
-            foreach (Line line in lines)
+        private void OnElementRemoved()
+        {
+            ElementRemoved?.Invoke();
+        }
+
+        private void OnElementsFalled()
+        {
+            FindMatches();
+            Invalidate();
+            // Уведомить пользователя + вызвать FillMatrix();
+        }
+
+        public void SelectElement()
+        {
+            int _elementSize = Width / 8;
+            Point mousePos = PointToClient(MousePosition);
+            Point curElement = new Point(mousePos.X / (_elementSize), mousePos.Y / (_elementSize));
+
+            // Если элемент еще не выбран
+            if (_selectedElement == new Point(-1, -1))
             {
-                int count = 0;
-                //горизонтальная линия
-                if (line.Start.Y == line.Finish.Y)
-                    for (int i = line.Start.X; i <= line.Finish.X; i++)
-                    {
-                        field[line.Start.Y, i] = -1;
-                        if (ElementRemoved != null)
-                            ElementRemoved(i, line.Start.Y);
-                        count++;
-                    }
-                //вертикальная линия
-                else
-                    for (int i = line.Start.Y; i <= line.Finish.Y; i++)
-                    {
-                        field[i, line.Start.X] = -1;
-                        if (ElementRemoved != null)
-                            ElementRemoved(line.Start.X, i);
-                        count++;
-                    }
-                int value = (count - 2) * baseValue;
-                _score += count * value;
+                _selectedElement = curElement;
+                return;
             }
-            if (MatchesRemoved != null)
-                MatchesRemoved();
-            return true;
+
+            if (_selectedElement != curElement)
+            {
+                if ((curElement.X == _selectedElement.X && curElement.Y == _selectedElement.Y - 1) ||
+                    (curElement.X == _selectedElement.X && curElement.Y == _selectedElement.Y + 1) ||
+                    (curElement.X == _selectedElement.X - 1 && curElement.Y == _selectedElement.Y) ||
+                    (curElement.X == _selectedElement.X + 1 && curElement.Y == _selectedElement.Y))
+                    MoveElements(_selectedElement, curElement);
+            }
+
+            _selectedElement = new Point(-1, -1);
         }
 
-        public bool Fall()
+        private void FallElements()
         {
-            List<Element> elements = new List<Element>();
-            //сдвигаем каждый элемент вниз, если есть место
-            for (int y = fieldSize - 2; y >= 0; --y)
-                for (int x = fieldSize - 1; x >= 0; --x)
-                {
-                    if (field[y + 1, x] == -1)
-                    {
-                        field[y + 1, x] = field[y, x];
-                        field[y, x] = -1;
-                        elements.Add(new Element(x, y + 1));
-                    }
-                }
-            //добавляем новые элементы сверху
             Random random = new Random();
-            for (int x = 0; x < fieldSize; ++x)
-                if (field[0, x] == -1)
+            for (int col = 0; col < GAME_FIELD_SIZE; ++col)
+            {
+                for (int row = GAME_FIELD_SIZE - 1; row >= 0; --row)
                 {
-                    field[0, x] = random.Next(0, 5);
-                    elements.Add(new Element(x, 0));
+                    if (_field[row, col] != -1) continue;
+
+                    int i = 0;
+                    do
+                    {
+                        i++;
+                    } while (row - i >= 0 && _field[row - i, col] == -1);
+
+                    if (row - i >= 0 && _field[row - i, col] != -1)
+                    {
+                        _field[row, col] = _field[row - i, col];
+                        _field[row - i, col] = -1;
+                    }
+                    else _field[row, col] = random.Next(0, 5);
                 }
-            if (ElementsFalled != null && elements.Count != 0)
-                ElementsFalled(elements);
-            if (elements.Count == 0)
-                return false;
-            else
-                return true;
+            }
+
+            ElementsFalled?.Invoke();
         }
 
-        //обмен
-        public void swap(Element a, Element b)
+        private bool FindMatches()
         {
-            int temp = field[a.X, a.Y];
-            field[a.X, a.Y] = field[b.X, b.Y];
-            field[b.X, b.Y] = temp;
+            bool isMatch = false;
+            int[,] tempField = _field.Clone() as int[,];
+            for (int row = 0; row < GAME_FIELD_SIZE; ++row)
+            {
+                int count = 1;
+                for (int col = 1; col < GAME_FIELD_SIZE; ++col)
+                {
+                    if (tempField[row, col - 1] == tempField[row, col]) count++;
+                    else count = 1;
+
+                    if (count == 3)
+                    {
+                        tempField[row, col - 2] = -1;
+                        tempField[row, col - 1] = -1;
+                        tempField[row, col] = -1;
+                        isMatch = true;
+                    }
+                    else if (count > 3) tempField[row, col] = -1;
+                }
+            }
+
+            for (int col = 0; col < GAME_FIELD_SIZE; ++col)
+            {
+                int count = 1;
+                for (int row = 1; row < GAME_FIELD_SIZE; ++row)
+                {
+                    if (tempField[row - 1, col] == tempField[row, col]) count++;
+                    else count = 1;
+
+                    if (count == 3)
+                    {
+                        tempField[row - 2, col] = -1;
+                        tempField[row - 1, col] = -1;
+                        tempField[row, col] = -1;
+                        isMatch = true;
+                    }
+                    else if (count > 3) tempField[row, col] = -1;
+                }
+            }
+
+            if (isMatch)
+            {
+                _field = tempField.Clone() as int[,];
+                FallElements();
+            };
+
+            return isMatch;
         }
 
-        //заполнение матрицы без повторений
+        private void SwapArrayElements(int x1, int y1, int x2, int y2)
+        {
+            int temp = _field[x1, y1];
+            _field[x1, y1] = _field[x2, y2];
+            _field[x2, y2] = temp;
+        }
+
+        private void MoveElements(Point firstElem, Point secondElem)
+        {
+            SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+            if (!FindMatches()) SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+        }
+
+        /// <summary>
+        /// Заполнение матрица
+        /// TODO: сделать так, чтобы были ходы!
+        /// </summary>
         public void FillMatrix()
         {
             Random random = new Random();
-            for (int y = 0; y < fieldSize; y++)
+            for (int row = 0; row < GAME_FIELD_SIZE; ++row)
             {
-                for(int x = 0; x < fieldSize; x++)
+                for (int col = 0; col < GAME_FIELD_SIZE; ++col)
                 {
                     int value;
                     bool repeat = false;
@@ -244,89 +200,50 @@ namespace threeInARow
                     {
                         value = random.Next(0, 5);
                         repeat = false;
-                        if (x >= 2 && (field[y, x - 2] == field[y, x - 1] && field[y, x - 2] == value))
-                            repeat = true;
-                        else if (y >= 2 && (field[y - 2, x] == field[y - 1, x] && field[y - 2, x] == value))
-                            repeat = true;
+                        if (col >= 2 && _field[row, col - 2] == _field[row, col - 1] && _field[row, col - 2] == value) repeat = true;
+                        else if (row >= 2 && _field[row - 2, col] == _field[row - 1, col] && _field[row - 2, col] == value) repeat = true;
                     }
-                    while (repeat != false);
-                    field[y, x] = value;
+                    while (repeat);
+
+                    _field[row, col] = value;
                 }
             }
+            Invalidate();
         }
+
+        private void OnControlClicked(object sender, EventArgs e) => SelectElement();
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            Brush backgroundColor = new SolidBrush(Color.Transparent);
-            e.Graphics.FillRectangle(backgroundColor, 0, 0, Width, Height);
-            int _elementSize = Size.Width / fieldSize;
-            int rectXY = _elementSize;
-            x = 5;
-            for (int i = 0; i < fieldSize; i++)
+            int _elementSize = Size.Width / GAME_FIELD_SIZE;
+
+            for (int row = 0; row < GAME_FIELD_SIZE; ++row)
             {
-                y = 5;
-                for (int j = 0; j < fieldSize; j++)
+                for (int col = 0; col < GAME_FIELD_SIZE; ++col)
                 {
-                    if (field[i, j] == 0)
-                        e.Graphics.FillEllipse(Brushes.Purple, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    else if (field[i, j] == 1)
-                            e.Graphics.FillEllipse(Brushes.Red, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    else if (field[i, j] == 2)
-                            e.Graphics.FillEllipse(Brushes.Orange, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    else if (field[i, j] == 3)
-                            e.Graphics.FillEllipse(Brushes.Green, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    else if (field[i, j] == 4)
-                            e.Graphics.FillEllipse(Brushes.Yellow, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    if(field[i,j] == 5)
-                    {
-                        e.Graphics.FillEllipse(Brushes.Transparent, _x + 5, _y + 5, _elementSize - 10, _elementSize - 10);
-                    }
-                    _y += rectXY;
+                    BallColors ballColor = (BallColors)_field[row, col];
+                    Brush brush = Brushes.Transparent;
+
+                    if (ballColor == BallColors.PURPLE) brush = Brushes.Purple;
+                    else if (ballColor == BallColors.RED) brush = Brushes.Red;
+                    else if (ballColor == BallColors.ORANGE) brush = Brushes.Orange;
+                    else if (ballColor == BallColors.GREEN) brush = Brushes.Green;
+                    else if (ballColor == BallColors.YELLOW) brush = Brushes.Yellow;
+
+                    e.Graphics.FillEllipse(brush, col * _elementSize, row * _elementSize, _elementSize - 5, _elementSize - 5);
                 }
-                _x += rectXY;
             }
         }
 
-        public int x
+        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
-            get
-            {
-                return _x;
-            }
-            set
-            {
-                if (value < 0) { value = 0; }
-                else
-                {
-                    if (value > Size.Width - Size.Width / 8) { value = Size.Width - Size.Width / 8; }
-                }
-                if (_x != value)
-                {
-                    _x = value;
-                    Invalidate();
-                }
-            }
+            if (width > Math.Min(width, height)) width = height;
+            else height = width;
+
+            base.SetBoundsCore(x, y, width, height, specified);
+            Invalidate();
         }
-        public int y
-        {
-            get
-            {
-                return _y;
-            }
-            set
-            {
-                if (value < 0) { value = 0; }
-                else
-                {
-                    if (value > Size.Width - Size.Width / 8) { value = Size.Width - Size.Width / 8; }
-                }
-                if (_y != value)
-                {
-                    _y = value;
-                    Invalidate();
-                }
-            }
-        }
+
         protected override CreateParams CreateParams
         {
             get
@@ -336,85 +253,5 @@ namespace threeInARow
                 return cp;
             }
         }
-        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
-        {
-            if (width > Math.Min(width, height))
-            {
-                width = height;
-            }
-            else
-            {
-                height = width;
-            }
-            base.SetBoundsCore(x, y, width, height, specified);
-            this.x = _x;
-            this.y = _y;
-            Invalidate();
-        }
-
-        public void Movefield(Point MousePosition)
-        {
-            int _elementSize = Width / 8;
-            MousePosition = PointToClient(MousePosition);
-            Point _element = new Point(MousePosition.X / (_elementSize), MousePosition.Y / (_elementSize));
-
-            if (_firstElement.X == -1 || _firstElement.Y == -1) //первая фигура выбрана
-            {
-                _firstElement = _element;
-                return;
-            }
-
-            if (field[_element.X, _element.Y] == field[_firstElement.X, _firstElement.Y]) //проверка на второй клик по той же фигуре
-                return;
-
-            if (_firstElement != _element)
-            {
-                bool near = false;
-                if ((_element.X == _firstElement.X && _element.Y == _firstElement.Y - 1) ||
-                    (_element.X == _firstElement.X && _element.Y == _firstElement.Y + 1) ||
-                    (_element.X == _firstElement.X - 1 && _element.Y == _firstElement.Y) ||
-                    (_element.X == _firstElement.X + 1 && _element.Y == _firstElement.Y))
-                    near = true;
-
-                if (!near)
-                {
-                    _firstElement = _element;
-                }
-                else
-                {
-                    _active = false;
-                    moveElements(_firstElement.X, _firstElement.Y, _element.X, _element.Y);
-                    //_firstElement = new Point(-1, -1);
-                }
-            }
-
-            _firstElement = new Point(-1, -1);
-            Invalidate();
-        }
-
-        private void moveElements(int el1X, int el1Y, int el2X, int el2Y)
-        {
-            Element elementA = new Element(el1X, el1Y);
-            Element elementB = new Element(el2X, el2Y);
-            swap(elementA, elementB);
-
-            bool result = RemoveMatches();
-            if(result == false)
-            {
-                swap(elementB, elementA);
-            }
-        }
-
-        public void removeElement(int row, int col)
-        {
-            field[row, col] = 5;
-        }
-
-        public void Finish()
-        {
-            _active = false;
-            //MessageBox.Show("Игра завершилась. Твой счет: " + score, "Game over", MessageBoxButtons.OK);
-        }
-
     }
 }
