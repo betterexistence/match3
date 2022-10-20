@@ -21,3 +21,4 @@ D:\course\match3-new-version\threeInARow\bin\Debug\threeInARow.pdb
 D:\course\match3-new-version\threeInARow\obj\Debug\threeInARow.csproj.CoreCompileInputs.cache
 D:\course\match3-new-version\threeInARow\obj\Debug\threeInARow.dll
 D:\course\match3-new-version\threeInARow\obj\Debug\threeInARow.pdb
+D:\course\match3-new-version\threeInARow\obj\Debug\threeInARow.csproj.AssemblyReference.cache

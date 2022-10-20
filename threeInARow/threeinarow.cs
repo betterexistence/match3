@@ -8,6 +8,9 @@ namespace threeInARow
     {
         private const int GAME_FIELD_SIZE = 8;
         private int _score;
+        private bool _freeze = false;
+
+        //сделать thread для анимации
 
         private enum BallColors : int
         {
@@ -63,12 +66,12 @@ namespace threeInARow
         private void OnElementRemoved()
         {
             ElementRemoved?.Invoke();
-            onEventScore();
         }
 
         private void OnElementsFalled()
         {
             FindMatches();
+            _freeze = false;
             Invalidate();
             // Уведомить пользователя + вызвать FillMatrix();
         }
@@ -127,55 +130,50 @@ namespace threeInARow
 
         private bool FindMatches()
         {
-            int value = 10;
             bool isMatch = false;
             int[,] tempField = _field.Clone() as int[,];
             for (int row = 0; row < GAME_FIELD_SIZE; ++row)
             {
                 int count = 1;
-                for (int col = 0; col < GAME_FIELD_SIZE; ++col)
+                for (int col = 1; col < GAME_FIELD_SIZE; ++col)
                 {
-                    for (int i = col + 1; i < GAME_FIELD_SIZE; ++i)
-                        if (tempField[row, i] == tempField[row, col])
-                            count++;
-                        else
-                            break;
+                    if (_field[row, col - 1] == tempField[row, col]) count++;
+                    else count = 1;
 
-                    if (count >= 3)
+                    if (count == 3)
                     {
+                        tempField[row, col - 2] = -1;
+                        tempField[row, col - 1] = -1;
+                        tempField[row, col] = -1;
                         isMatch = true;
-                        for (int i = col; i < col + count; i++)
-                        {
-                            tempField[row, i] = -1;
-                        }
                     }
+                    else if (count > 3)
+                        tempField[row, col] = -1;
                 }
             }
 
             for (int col = 0; col < GAME_FIELD_SIZE; ++col)
             {
                 int count = 1;
-                for (int row = 0; row < GAME_FIELD_SIZE; ++row)
+                for (int row = 1; row < GAME_FIELD_SIZE; ++row)
                 {
-                    for (int i = row + 1; i < GAME_FIELD_SIZE; ++i)
-                        if (tempField[i, col] == tempField[row, col])
-                            count++;
-                        else
-                            break;
+                    if (_field[row - 1, col] == tempField[row, col]) count++;
+                    else count = 1;
 
-                    if(count >= 3)
+                    if (count == 3)
                     {
+                        tempField[row - 2, col] = -1;
+                        tempField[row - 1, col] = -1;
+                        tempField[row, col] = -1;
                         isMatch = true;
-                        for(int i = row; i < row + count; i++)
-                        {
-                            tempField[i, col] = -1;
-                        }
                     }
+                    else if (count > 3) tempField[row, col] = -1;
                 }
             }
 
             if (isMatch)
             {
+                int value = 10;
                 int count = 0;
                 foreach(int i in tempField)
                     if(i == -1)
@@ -199,6 +197,7 @@ namespace threeInARow
 
         private void MoveElements(Point firstElem, Point secondElem)
         {
+            _freeze = true;
             SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
             if (!FindMatches()) SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
         }
@@ -231,8 +230,11 @@ namespace threeInARow
             Invalidate();
         }
 
-        private void OnControlClicked(object sender, EventArgs e) => SelectElement();
-
+        private void OnControlClicked(object sender, EventArgs e)
+        {
+            if(!_freeze)
+                SelectElement();
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             int _elementSize = Size.Width / GAME_FIELD_SIZE;
