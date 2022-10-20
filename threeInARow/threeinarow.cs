@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Threading;
+using Timer = System.Windows.Forms.Timer;
 
 namespace threeInARow
 {
@@ -11,7 +13,7 @@ namespace threeInARow
         private bool _freeze = false;
 
         //сделать thread для анимации
-
+        
         private enum BallColors : int
         {
             PURPLE = 0,
@@ -78,7 +80,7 @@ namespace threeInARow
 
         public void SelectElement()
         {
-            int _elementSize = Width / 8;
+            int _elementSize = Width / GAME_FIELD_SIZE;
             Point mousePos = PointToClient(MousePosition);
             Point curElement = new Point(mousePos.X / (_elementSize), mousePos.Y / (_elementSize));
 
@@ -124,8 +126,13 @@ namespace threeInARow
                     else _field[row, col] = random.Next(0, 5);
                 }
             }
-
-            ElementsFalled?.Invoke();
+            Timer timer = new Timer();
+            timer.Interval = 1000;
+            timer.Tick += new EventHandler((o, ev) =>
+            {
+                ElementsFalled?.Invoke();
+            });
+            timer.Start();
         }
 
         private bool FindMatches()
@@ -193,12 +200,14 @@ namespace threeInARow
             int temp = _field[x1, y1];
             _field[x1, y1] = _field[x2, y2];
             _field[x2, y2] = temp;
+            
         }
 
         private void MoveElements(Point firstElem, Point secondElem)
         {
             _freeze = true;
             SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+            Thread.Sleep(10);
             if (!FindMatches()) SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
         }
 
