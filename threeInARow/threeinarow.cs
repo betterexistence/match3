@@ -13,7 +13,7 @@ namespace threeInARow
         private bool _freeze = false;
 
         //сделать thread для анимации
-        
+
         private enum BallColors : int
         {
             PURPLE = 0,
@@ -60,8 +60,6 @@ namespace threeInARow
             ElementsFalled += OnElementsFalled;
             ElementRemoved += OnElementRemoved;
             FillMatrix();
-
-
             //_isGamePlaying = true;
         }
 
@@ -73,8 +71,8 @@ namespace threeInARow
         private void OnElementsFalled()
         {
             FindMatches();
-            _freeze = false;
             Invalidate();
+            _freeze = false;
             // Уведомить пользователя + вызвать FillMatrix();
         }
 
@@ -123,16 +121,13 @@ namespace threeInARow
                         _field[row, col] = _field[row - i, col];
                         _field[row - i, col] = -1;
                     }
-                    else _field[row, col] = random.Next(0, 5);
+                    else
+                    {
+                        _field[row, col] = random.Next(0, 5);
+                    }
                 }
             }
-            Timer timer = new Timer();
-            timer.Interval = 1000;
-            timer.Tick += new EventHandler((o, ev) =>
-            {
-                ElementsFalled?.Invoke();
-            });
-            timer.Start();
+            ElementsFalled?.Invoke();
         }
 
         private bool FindMatches()
@@ -141,74 +136,81 @@ namespace threeInARow
             int[,] tempField = _field.Clone() as int[,];
             for (int row = 0; row < GAME_FIELD_SIZE; ++row)
             {
-                int count = 1;
+                int countCol = 1;
                 for (int col = 1; col < GAME_FIELD_SIZE; ++col)
                 {
-                    if (_field[row, col - 1] == tempField[row, col]) count++;
-                    else count = 1;
+                    if (_field[row, col - 1] == tempField[row, col]) countCol++;
+                    else countCol = 1;
 
-                    if (count == 3)
+                    if (countCol == 3)
                     {
                         tempField[row, col - 2] = -1;
                         tempField[row, col - 1] = -1;
                         tempField[row, col] = -1;
                         isMatch = true;
                     }
-                    else if (count > 3)
+                    else if (countCol > 3)
                         tempField[row, col] = -1;
                 }
             }
 
             for (int col = 0; col < GAME_FIELD_SIZE; ++col)
             {
-                int count = 1;
+                int countRow = 1;
                 for (int row = 1; row < GAME_FIELD_SIZE; ++row)
                 {
-                    if (_field[row - 1, col] == tempField[row, col]) count++;
-                    else count = 1;
+                    if (_field[row - 1, col] == tempField[row, col]) countRow++;
+                    else countRow = 1;
 
-                    if (count == 3)
+                    if (countRow == 3)
                     {
                         tempField[row - 2, col] = -1;
                         tempField[row - 1, col] = -1;
                         tempField[row, col] = -1;
                         isMatch = true;
                     }
-                    else if (count > 3) tempField[row, col] = -1;
+                    else if (countRow > 3) tempField[row, col] = -1;
                 }
             }
 
-            if (isMatch)
-            {
-                int value = 10;
-                int count = 0;
-                foreach(int i in tempField)
-                    if(i == -1)
-                        count++;
+            if (!isMatch) return false;
 
-                _score += count * value;
-                _field = tempField.Clone() as int[,];
-                FallElements();
-            }
+            int value = 10;
+            int count = 0;
+            foreach (int i in tempField)
+                if (i == -1)
+                    count++;
+
+            _score += count * value;
+            _field = tempField.Clone() as int[,];
+            FallElements();
             onEventScore();
-
-            return isMatch;
-        }
-
-        private void SwapArrayElements(int x1, int y1, int x2, int y2)
-        {
-            int temp = _field[x1, y1];
-            _field[x1, y1] = _field[x2, y2];
-            _field[x2, y2] = temp;
-            
+            return true;
         }
 
         private void MoveElements(Point firstElem, Point secondElem)
         {
             _freeze = true;
             SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
-            Thread.Sleep(10);
-            if (!FindMatches()) SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+            if (!FindMatches())
+            {
+                System.Timers.Timer timer = new System.Timers.Timer();
+                timer.Interval = 1000;
+                timer.AutoReset = false;
+                timer.Start();
+                timer.Elapsed += (o, ev) =>
+                {
+                    SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+                    _freeze = false;
+                };
+            }
+        }
+        private void SwapArrayElements(int x1, int y1, int x2, int y2)
+        {
+            int temp = _field[x1, y1];
+            _field[x1, y1] = _field[x2, y2];
+            _field[x2, y2] = temp;
+            Invalidate();
         }
 
         /// <summary>
@@ -241,7 +243,7 @@ namespace threeInARow
 
         private void OnControlClicked(object sender, EventArgs e)
         {
-            if(!_freeze)
+            if (!_freeze)
                 SelectElement();
         }
         protected override void OnPaint(PaintEventArgs e)
