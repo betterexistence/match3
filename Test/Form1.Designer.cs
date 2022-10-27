@@ -33,6 +33,7 @@ namespace Test
             this.scoreLabel = new System.Windows.Forms.Label();
             this.startGameButton = new System.Windows.Forms.Button();
             this.stopGameButton = new System.Windows.Forms.Button();
+            this.timerLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // threeinarow1
@@ -47,6 +48,7 @@ namespace Test
             this.threeinarow1.TabIndex = 1;
             this.threeinarow1.Text = "threeinarow1";
             this.threeinarow1.EventScore += new System.EventHandler(this.scoreLabel_eventScore);
+            this.threeinarow1.EventTimer += new System.EventHandler(this.timerLabel_eventTimer);
             // 
             // scoreLabel
             // 
@@ -77,12 +79,22 @@ namespace Test
             this.stopGameButton.UseVisualStyleBackColor = true;
             this.stopGameButton.Click += new System.EventHandler(this.stopGameButton_Click);
             // 
+            // timerLabel
+            // 
+            this.timerLabel.AutoSize = true;
+            this.timerLabel.Location = new System.Drawing.Point(542, 33);
+            this.timerLabel.Name = "timerLabel";
+            this.timerLabel.Size = new System.Drawing.Size(36, 13);
+            this.timerLabel.TabIndex = 5;
+            this.timerLabel.Text = "Timer:";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.ClientSize = new System.Drawing.Size(634, 451);
+            this.Controls.Add(this.timerLabel);
             this.Controls.Add(this.stopGameButton);
             this.Controls.Add(this.startGameButton);
             this.Controls.Add(this.scoreLabel);
@@ -101,6 +113,7 @@ namespace Test
         private System.Windows.Forms.Label scoreLabel;
         private System.Windows.Forms.Button startGameButton;
         private System.Windows.Forms.Button stopGameButton;
+        private System.Windows.Forms.Label timerLabel;
     }
 }
 
