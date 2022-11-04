@@ -17,7 +17,7 @@ namespace Test
 
         private void startGameButton_Click(object sender, EventArgs e)
         {
-            if (threeinarow1.Active == false)
+            if (threeinarow1.active == false)
             {
                 threeinarow1.StartGame();
             }
@@ -25,7 +25,7 @@ namespace Test
 
         private void stopGameButton_Click(object sender, EventArgs e)
         {
-            if (threeinarow1.Active == true)
+            if (threeinarow1.active == true)
             {
                 threeinarow1.Finish();
             }
@@ -34,17 +34,15 @@ namespace Test
         private void timerLabel_eventTimer(object sender, EventArgs e)
         {
             int timer = threeinarow1._timerCount;
-            bool access = timerLabel.InvokeRequired;
-            if (access) timerLabel.Invoke(new Action(() => { timerLabel.Text = "Timer: " + timer; }));
-            else timerLabel.Text = "Таймер: " + timer;
+            timerLabel.Text = "Таймер: " + timer;
         }
 
         private void scoreLabel_eventScore(object sender, EventArgs e)
         {
-            int score = threeinarow1.Score;
+            int score = threeinarow1.score;
             bool access = scoreLabel.InvokeRequired;
-            if(access) scoreLabel.Invoke(new Action(() => { scoreLabel.Text = "Очков: " + score; }));
-            else scoreLabel.Text = "Очков: " + score;
+            if(access) scoreLabel.Invoke(new Action(() => { scoreLabel.Text = "Текущий счет: " + score; }));
+            else scoreLabel.Text = "Текущий счет: " + score;
         }
     }
 }

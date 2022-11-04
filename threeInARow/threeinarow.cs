@@ -3,29 +3,55 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Threading;
 using Timer = System.Timers.Timer;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace threeInARow
 {
     public class ThreeInARow : Control
     {
-        private const int GAME_FIELD_SIZE = 8;
-        private int _score;
-        private bool _freeze = false;
-
-        protected bool _firstGame = true;
-
+        public int score;
         public int _timerCount;
+        public bool active;
+         
+        private static int _staticTimerCount;
+        private const int GAME_FIELD_SIZE = 8;
+        private bool _freeze = false;
+        private Color _colorBackground;
+        private Point _selectedElement = new Point(-1, -1);
+        private int[,] _field = new int[GAME_FIELD_SIZE, GAME_FIELD_SIZE];
+        
         protected Timer _timer;
-
-        protected bool _active;
-        public bool Active
+        protected event EventHandler _eventScore;
+        public event EventHandler EventScore
         {
-            get { return _active; }
-            set { _active = value; }
+            add { _eventScore += value; }
+            remove { _eventScore -= value; }
+        }
+        protected event EventHandler _eventTimer;
+        public event EventHandler EventTimer
+        {
+            add { _eventTimer += value; }
+            remove { _eventTimer -= value; }
         }
 
+        public int TimerCount
+        {
+            get => _timerCount;
+            set
+            {
+                _timerCount = value;
+                if(_timerCount < 60) _timerCount = 60;
+                if (_timerCount > 180) _timerCount = 180;
+                _staticTimerCount = _timerCount;
+            }
+        }
+        public Color ColorBackground
+        {
+            get => _colorBackground;
+            set
+            {
+                _colorBackground = value;
+            }
+        }
         private enum BallColors : int
         {
             PURPLE = 0,
@@ -34,22 +60,8 @@ namespace threeInARow
             GREEN,
             YELLOW
         }
-        protected event EventHandler _eventScore;
-        public event EventHandler EventScore
-        {
-            add { _eventScore += value; }
-            remove { _eventScore -= value; }
-        }
 
         protected void OnScoreUpdated() => _eventScore?.Invoke(this, new EventArgs());
-
-        protected event EventHandler _eventTimer;
-        public event EventHandler EventTimer
-        {
-            add { _eventTimer += value; }
-            remove { _eventTimer -= value; }
-        }
-
         private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             Invoke(new Action(() =>
@@ -60,62 +72,49 @@ namespace threeInARow
                     _timerCount--;
                     _eventTimer?.Invoke(this, new EventArgs());
                 }
-                else if (Active && !_freeze)
+                else if (active && !_freeze)
                 {
                     Finish();
                 }
             }));
         }
 
-        public void Finish()
-        {
-            _timer.Elapsed -= OnTimerElapsed;
-            _active = false;
-            MessageBox.Show("Игра завершилась. Твой счет: " + _score, "Конец игры.", MessageBoxButtons.OK);
-        }
-
-        public int Score
-        {
-            get => _score;
-            set
-            {
-                if (value < 0) value = 0;
-                _score = value;
-            }
-        }
-
-        private int[,] _field = new int[GAME_FIELD_SIZE, GAME_FIELD_SIZE];
-
-        private Point _selectedElement = new Point(-1, -1);
-
         public ThreeInARow()
         {
+            OnScoreUpdated();
             Click += OnControlClicked;
         }
 
         private void UpdateMatrix()
         {
             FindMatches();
-            Invalidate();
             _freeze = false;
             while (!ValidateTurnOnField())
             {
                 MessageBox.Show("Нет ходов", "Генерация нового поля", MessageBoxButtons.OK);
                 FillMatrix();
-            }
+            }   
+        }
+
+        public void Finish()
+        {
+            _selectedElement = new Point(-1, -1);
+            _timer.Elapsed -= OnTimerElapsed;
+            active = false;
+            MessageBox.Show("Игра завершилась. Твой счет: " + score, "Конец игры.", MessageBoxButtons.OK);
         }
 
         public void StartGame()
         {
-            _score = 0;
-            _timerCount = 60;
+            score = 0;
+            _timerCount = _staticTimerCount;
             _timer = new Timer(1000);
             _timer.Start();
             _timer.Elapsed += OnTimerElapsed;
-
             FillMatrix();
-            UpdateMatrix();
-            _active = true;
+            ValidateTurnOnField();
+            active = true;
+            OnScoreUpdated();
         }
 
         public void SelectElement()
@@ -124,7 +123,6 @@ namespace threeInARow
             Point mousePos = PointToClient(MousePosition);
             Point curElement = new Point(mousePos.X / (_elementSize), mousePos.Y / (_elementSize));
 
-            // Если элемент еще не выбран
             if (_selectedElement == new Point(-1, -1))
             {
                 _selectedElement = curElement;
@@ -144,11 +142,7 @@ namespace threeInARow
                 }
                 else _selectedElement = curElement;
             }
-            else
-            {
-                _selectedElement = new Point(-1, -1);
-            }
-
+            else _selectedElement = new Point(-1, -1);
             Invalidate();
         }
 
@@ -161,11 +155,10 @@ namespace threeInARow
                 for (int col = 0; col < GAME_FIELD_SIZE; col++)
                 {
                     if (_field[row, col] != -1) continue;
-
                     Thread.Sleep(50);
                     int i = 0;
                     do
-                    {
+                    {   
                         i++;
                     } while (row - i >= 0 && _field[row - i, col] == -1);
 
@@ -188,26 +181,24 @@ namespace threeInARow
         private bool ValidateTurnOnField()
         {
             bool isMatch = false;
-
             for (int row = 0; row < GAME_FIELD_SIZE; row++)
             {
                 for (int col = 0; col < GAME_FIELD_SIZE; col++)
                 {
                     int cur = _field[row, col];
                     if (row - 1 >= 0)
-                        if (CheckRow(row, row - 1, col, cur)) return true;
+                        if (CheckRow(row, row - 1, col, cur)) isMatch = true;
 
                     if (row + 1 < GAME_FIELD_SIZE)
-                        if (CheckRow(row, row + 1, col, cur)) return true;
+                        if (CheckRow(row, row + 1, col, cur)) isMatch = true;
 
                     if (col - 1 >= 0)
-                        if (CheckCol(col, row, col - 1, cur)) return true;
+                        if (CheckCol(col, row, col - 1, cur)) isMatch = true;
 
                     if (col + 1 < GAME_FIELD_SIZE)
-                        if (CheckCol(col, row, col + 1, cur)) return true;
+                        if (CheckCol(col, row, col + 1, cur)) isMatch = true;
                 }
             }
-
             bool CheckRow(int old, int row, int col, int cur)
             {
                 bool _isMatch = false;
@@ -218,7 +209,6 @@ namespace threeInARow
                 else if (old > row && row - 2 >= 0 && _field[row - 2, col] == cur && _field[row - 1, col] == cur) _isMatch = true;
                 return _isMatch;
             }
-
             bool CheckCol(int old, int row, int col, int cur)
             {
                 bool _isMatch = false;
@@ -229,7 +219,6 @@ namespace threeInARow
                 else if (old > col && col - 2 >= 0 && _field[row, col - 2] == cur && _field[row, col - 1] == cur) _isMatch = true;
                 return _isMatch;
             }
-
             return isMatch;
         }
 
@@ -283,7 +272,7 @@ namespace threeInARow
                 if (i == -1)
                     count++;
 
-            _score += count * value;
+            score += count * value;
             _field = tempField.Clone() as int[,];
             FallElements();
             OnScoreUpdated();
@@ -293,28 +282,28 @@ namespace threeInARow
         private void MoveElements(Point firstElem, Point secondElem)
         {
             _freeze = true;
-            SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+            SwapElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
             Timer timer = new Timer();
             timer.Interval = 500;
             timer.AutoReset = false;
-            timer.Start();
+            timer.Start();  
             timer.Elapsed += (o, ev) =>
             {
                 if (!FindMatches())
                 {
-                    SwapArrayElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
+                    SwapElements(firstElem.Y, firstElem.X, secondElem.Y, secondElem.X);
                     _freeze = false;
                 }
             };
         }
-        private void SwapArrayElements(int x1, int y1, int x2, int y2)
+        private void SwapElements(int x1, int y1, int x2, int y2)
         {
             int temp = _field[x1, y1];
             _field[x1, y1] = _field[x2, y2];
             _field[x2, y2] = temp;
             Invalidate();
         }
-        public void FillMatrix()
+        private void FillMatrix()
         {
             Random random = new Random();
             for (int row = 0; row < GAME_FIELD_SIZE; row++)
@@ -333,49 +322,48 @@ namespace threeInARow
                     while (repeat);
 
                     _field[row, col] = value;
-                }
+                }   
             }
-            //while (!ValidateTurnOnField())
-            //{
-            //    FillMatrix();
-            //}
             Invalidate();
         }
         private void OnControlClicked(object sender, EventArgs e)
         {
-            if (_active)
+            if (active)
                 if (!_freeze)
                     SelectElement();
         }
         protected override void OnPaint(PaintEventArgs e)
         {
-            //шобы при селектэлемент и жмать кнопку стоп, не было видно селектэлемеент
-            //отодвинуть пользовательский интефрейс(кнопачки(сделать в контроле а не наформе))
-            //отадвинуть поле на 3 сантимитра в права
-            //дабавить лутший счет(бест(score))
-            if (!_active) return;
-            
+            if (!active) return;
             int _elementSize = Size.Width / GAME_FIELD_SIZE;
-
+            e.Graphics.FillRectangle(new SolidBrush(_colorBackground), 0, 0, Size.Width, Size.Height);
+            int indent = _elementSize / GAME_FIELD_SIZE;
             for (int row = 0; row < GAME_FIELD_SIZE; row++)
             {
                 for (int col = 0; col < GAME_FIELD_SIZE; col++)
                 {
                     BallColors ballColor = (BallColors)_field[row, col];
                     Brush brush = Brushes.Transparent;
+                    Brush brushLight = Brushes.Transparent;
+                    Brush brushDark = Brushes.Transparent;
 
-                    if (ballColor == BallColors.PURPLE) brush = Brushes.Purple;
-                    else if (ballColor == BallColors.RED) brush = Brushes.Red;
-                    else if (ballColor == BallColors.ORANGE) brush = Brushes.Orange;
-                    else if (ballColor == BallColors.GREEN) brush = Brushes.Green;
-                    else if (ballColor == BallColors.YELLOW) brush = Brushes.Yellow;
+                    if (ballColor == BallColors.PURPLE)
+                    {
+                        brushLight = Brushes.Violet;
+                        brush = Brushes.DarkViolet;
+                        brushDark = Brushes.Purple;
+                    }
+                    else if (ballColor == BallColors.RED) brush = Brushes.Crimson;
+                    else if (ballColor == BallColors.ORANGE) brush = Brushes.Coral;
+                    else if (ballColor == BallColors.GREEN) brush = Brushes.YellowGreen;
+                    else if (ballColor == BallColors.YELLOW) brush = Brushes.LemonChiffon;
 
                     if (_selectedElement.X == col && _selectedElement.Y == row)
-                    {
-                        e.Graphics.FillEllipse(Brushes.Black, col * _elementSize -3 , row * _elementSize -3 , _elementSize + 1, _elementSize + 1);
-                    }
+                        e.Graphics.FillRectangle(Brushes.Black, col * _elementSize, row * _elementSize, _elementSize, _elementSize);
 
-                    e.Graphics.FillEllipse(brush, col * _elementSize, row * _elementSize, _elementSize - 5, _elementSize - 5);
+                    //e.Graphics.FillRectangle(brushLight, col * _elementSize + indent, row * _elementSize + indent, _elementSize - indent * 2, _elementSize - indent * 2);
+                    //e.Graphics.FillRectangle(brushDark, col * _elementSize + indent + 5, row * _elementSize + indent + 5, _elementSize - indent * 2, _elementSize - indent * 2);
+                    e.Graphics.FillRectangle(brush, col * _elementSize + indent , row * _elementSize + indent, _elementSize - indent * 2 , _elementSize - indent *2);
                 }
             }
         }
