@@ -130,6 +130,7 @@ namespace threeInARow
             _timer.Elapsed -= OnTimerElapsed;
             active = false;
             MessageBox.Show("Игра завершилась. Твой счет: " + score, "Конец игры.", MessageBoxButtons.OK);
+            Invalidate();
         }
         //метод старта игровой сессии
         public void StartGame()
